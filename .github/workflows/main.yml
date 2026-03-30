@@ -32,7 +32,7 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
-        git add stock_gifts.json
+        git add .
         # 如果有新資料就存檔，沒有就略過
         git commit -m "更新股東會紀念品資料" || echo "今天沒有新資料"
         git push
