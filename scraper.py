@@ -21,8 +21,8 @@ def format_gift_name(name):
         store = "全家超商"
         
     if store:
-        # 擷取數字金額
-        amount_match = re.search(r'(\d+)元?', name)
+        # 擷取數字金額 (強制匹配「元」，避免誤判 7-11 的 7)
+        amount_match = re.search(r'(\d+)元', name)
         if amount_match:
             amount = amount_match.group(1)
             # 判斷卡片類型，預設為商品卡
@@ -99,6 +99,19 @@ def fetch_and_save():
             df = df.dropna(subset=['代號'])
             df = df.fillna('')
             df = df.drop_duplicates(subset=['代號'], keep='first')
+            
+            # 建立例外資料校正字典：用於覆寫來源網站之錯誤登錄
+            manual_overrides = {
+                '國光生': '氣密保鮮罐(不足時將以等值商品替代)'
+            }
+            
+            # 執行例外資料強制覆寫
+            if '名稱' in df.columns:
+                for stock_name, correct_gift in manual_overrides.items():
+                    if '股東會紀念品' in df.columns:
+                        df.loc[df['名稱'] == stock_name, '股東會紀念品'] = correct_gift
+                    if '紀念品' in df.columns:
+                        df.loc[df['名稱'] == stock_name, '紀念品'] = correct_gift
             
             # 執行資料清洗與格式統一
             if '股東會紀念品' in df.columns:
