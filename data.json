@@ -1,0 +1,39 @@
+{
+  "updated": "2026-03-30 13:07:02",
+  "count": 3,
+  "data": [
+    {
+      "code": "2429",
+      "name": "銘旺科",
+      "gift": "41.05",
+      "lastBuyDate": "2026-04-15",
+      "meetingDate": "2026-06-16",
+      "zeroShare": "否",
+      "agentPhone": "桃園",
+      "status": "ok",
+      "daysLeft": 16
+    },
+    {
+      "code": "2616",
+      "name": "山隆",
+      "gift": "18.15",
+      "lastBuyDate": "2026-04-15",
+      "meetingDate": "2026-06-18",
+      "zeroShare": "否",
+      "agentPhone": "新北",
+      "status": "ok",
+      "daysLeft": 16
+    },
+    {
+      "code": "3312",
+      "name": "弘憶股",
+      "gift": "34.6",
+      "lastBuyDate": "2026-04-15",
+      "meetingDate": "2026-06-17",
+      "zeroShare": "否",
+      "agentPhone": "台北",
+      "status": "ok",
+      "daysLeft": 16
+    }
+  ]
+}
