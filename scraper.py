@@ -5,6 +5,35 @@ from io import StringIO
 import json
 from datetime import datetime
 import time
+import re
+
+def format_gift_name(name):
+    """標準化紀念品名稱，統一超商商品卡格式"""
+    name = str(name).replace('參考圖', '').strip()
+    if not name or name == 'nan' or name == '無' or name == '不發放':
+        return name
+    
+    store = ""
+    # 辨識超商名稱
+    if re.search(r'(7-11|7-eleven|統一超商|統一)', name, re.IGNORECASE):
+        store = "7-11超商"
+    elif re.search(r'(全家)', name):
+        store = "全家超商"
+        
+    if store:
+        # 擷取數字金額
+        amount_match = re.search(r'(\d+)元?', name)
+        if amount_match:
+            amount = amount_match.group(1)
+            # 判斷卡片類型，預設為商品卡
+            card_type = "商品卡"
+            if "禮物卡" in name:
+                card_type = "禮物卡"
+            elif "購物金" in name:
+                card_type = "購物金"
+            return f"{store}{amount}元{card_type}"
+            
+    return name
 
 def fetch_and_save():
     # 拆分網址字串，避免編輯器解析錯誤
@@ -71,11 +100,11 @@ def fetch_and_save():
             df = df.fillna('')
             df = df.drop_duplicates(subset=['代號'], keep='first')
             
-            # 清除「參考圖」贅字與多餘空白
+            # 執行資料清洗與格式統一
             if '股東會紀念品' in df.columns:
-                df['股東會紀念品'] = df['股東會紀念品'].astype(str).str.replace('參考圖', '', regex=False).str.strip()
+                df['股東會紀念品'] = df['股東會紀念品'].apply(format_gift_name)
             if '紀念品' in df.columns:
-                df['紀念品'] = df['紀念品'].astype(str).str.replace('參考圖', '', regex=False).str.strip()
+                df['紀念品'] = df['紀念品'].apply(format_gift_name)
             
             records = df.to_dict('records')
             
