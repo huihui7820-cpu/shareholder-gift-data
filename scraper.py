@@ -19,15 +19,22 @@ def fetch_and_save():
         # 讀取網頁中的表格
         tables = pd.read_html(StringIO(res.text))
         
-        df = None
+        all_data = []
+        # 尋找網頁上「所有」包含代號與名稱的表格，把它們全部收集起來
         for t in tables:
             if '代號' in t.columns and '名稱' in t.columns:
-                df = t
-                break
+                all_data.append(t)
                 
-        if df is not None:
-            # 把空缺的資料補成空白，避免出錯
+        if all_data:
+            # 1. 將多個表格合併成一個大表格
+            df = pd.concat(all_data, ignore_index=True)
+            
+            # 2. 清理資料：刪除全空的列，並把空值補成空白字串
+            df = df.dropna(subset=['代號'])
             df = df.fillna('')
+            
+            # 3. 確保代號不重複 (保留最新的一筆)
+            df = df.drop_duplicates(subset=['代號'], keep='first')
             
             # 把表格轉換成清單格式
             records = df.to_dict('records')
@@ -38,11 +45,11 @@ def fetch_and_save():
                 "data": records
             }
             
-            # 存成 JSON 筆記本檔案
-            with open('stock_gifts.json', 'w', encoding='utf-8') as f:
+            # 存成 JSON 筆記本檔案 (配合您的檔名 data.json)
+            with open('data.json', 'w', encoding='utf-8') as f:
                 json.dump(output, f, ensure_ascii=False, indent=4)
                 
-            print("成功！已儲存最新的 stock_gifts.json")
+            print(f"成功！總共抓取了 {len(records)} 筆資料，已儲存至 data.json")
         else:
             print("找不到表格，網站可能改版了。")
             
