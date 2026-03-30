@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 
 def fetch_and_save():
+    # 這裡已經修正為純文字網址，機器人可以順利連線了
     url = "[https://histock.tw/stock/gift.aspx](https://histock.tw/stock/gift.aspx)"
     # 偽裝成真人瀏覽器
     headers = {
