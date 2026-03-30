@@ -1,30 +1,38 @@
-name: 每日更新股東會紀念品資料
+name: 每天自動更新紀念品
 
 on:
   schedule:
-    - cron: '0 23 * * *'
-  workflow_dispatch:
+    # 每天台灣時間早上 8 點執行 (UTC時間0點)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允許我們手動點擊按鈕測試
+
+permissions:
+  contents: write # 允許機器人把新檔案寫進資料夾
 
 jobs:
-  scrape:
+  run-bot:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - name: 取得程式碼
-        uses: actions/checkout@v4
-      - name: 安裝 Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: 安裝套件
-        run: pip install requests beautifulsoup4
-      - name: 執行爬蟲
-        run: python scraper.py
-      - name: 儲存結果
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add data.json
-          git diff --staged --quiet || git commit -m "自動更新：$(date '+%Y-%m-%d')"
-          git push
+    - name: 下載資料夾內容
+      uses: actions/checkout@v3
+
+    - name: 安裝 Python 環境
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: 安裝機器人需要的工具
+      run: |
+        pip install requests pandas lxml bs4
+
+    - name: 執行抓取程式！
+      run: python scraper.py
+
+    - name: 把新資料存檔並上傳
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action Bot"
+        git add stock_gifts.json
+        # 如果有新資料就存檔，沒有就略過
+        git commit -m "更新股東會紀念品資料" || echo "今天沒有新資料"
+        git push
