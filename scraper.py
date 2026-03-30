@@ -21,17 +21,23 @@ def format_gift_name(name):
         store = "全家超商"
         
     if store:
-        # 擷取數字金額 (強制匹配「元」，避免誤判 7-11 的 7)
-        amount_match = re.search(r'(\d+)元', name)
-        if amount_match:
-            amount = amount_match.group(1)
-            # 判斷卡片類型，預設為商品卡
-            card_type = "商品卡"
-            if "禮物卡" in name:
-                card_type = "禮物卡"
-            elif "購物金" in name:
-                card_type = "購物金"
+        # 擷取字串中所有數字，並強制過濾 7 與 11，避免受超商名稱干擾
+        numbers = re.findall(r'\d+', name)
+        valid_numbers = [num for num in numbers if num not in ['7', '11']]
+        
+        amount = valid_numbers[0] if valid_numbers else ""
+                
+        # 判斷卡片類型
+        card_type = "商品卡"
+        if "禮物卡" in name:
+            card_type = "禮物卡"
+        elif "購物金" in name:
+            card_type = "購物金"
+            
+        if amount:
             return f"{store}{amount}元{card_type}"
+        else:
+            return f"{store}{card_type}"
             
     return name
 
