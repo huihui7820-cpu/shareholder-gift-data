@@ -27,10 +27,13 @@ def fetch_and_save():
         while True:
             # 1. 解析當前網頁表格
             tables = pd.read_html(StringIO(res.text))
+            
+            # 找到該頁面上「所有」包含代號的表格都加進來 (拿掉 break，避免漏掉大表格)
+            table_found = False
             for t in tables:
                 if '代號' in t.columns and '名稱' in t.columns:
                     all_data.append(t)
-                    break
+                    table_found = True
             
             # 2. 尋找「下一頁」的機制 (破解 ASP.NET 隱藏表單)
             soup = BeautifulSoup(res.text, 'html.parser')
@@ -45,7 +48,7 @@ def fetch_and_save():
             next_page_link = soup.find('a', string=next_page_str)
             
             if not next_page_link:
-                print(f"找不到第 {page + 1} 頁，代表已經抓到最後一頁了！")
+                print(f"找不到第 {page + 1} 頁的按鈕，代表已經抓到最後一頁了！")
                 break
                 
             # 解析 href 中的換頁代碼 (例如 javascript:__doPostBack('ctl00$CPH1$Pager1$ctl02',''))
