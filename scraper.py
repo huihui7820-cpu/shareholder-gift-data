@@ -7,17 +7,15 @@ from datetime import datetime
 import time
 
 def fetch_and_save():
-    # 【終極修正版】將網址切成兩半組合，防止網頁編輯器自動加上 Markdown 連結格式導致報錯
+    # 拆分網址字串，避免編輯器解析錯誤
     url = "https://" + "histock.tw/stock/gift.aspx"
     
-    # 偽裝成真人瀏覽器
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
     
     try:
         session = requests.Session()
-        print("開始抓取第 1 頁資料...")
         res = session.get(url, headers=headers)
         res.raise_for_status()
         
@@ -25,40 +23,34 @@ def fetch_and_save():
         page = 1
         
         while True:
-            # 1. 解析當前網頁表格
+            # 1. 擷取當前頁面表格
             tables = pd.read_html(StringIO(res.text))
             
-            # 找到該頁面上「所有」包含代號的表格都加進來 (拿掉 break，避免漏掉大表格)
-            table_found = False
+            # 篩選具備正確欄位結構之表格
             for t in tables:
                 if '代號' in t.columns and '名稱' in t.columns:
                     all_data.append(t)
-                    table_found = True
             
-            # 2. 尋找「下一頁」的機制 (破解 ASP.NET 隱藏表單)
+            # 2. 解析分頁機制
             soup = BeautifulSoup(res.text, 'html.parser')
             
-            # 找出隱藏的狀態欄位
             viewstate = soup.find('input', {'name': '__VIEWSTATE'})
             viewstategenerator = soup.find('input', {'name': '__VIEWSTATEGENERATOR'})
             eventvalidation = soup.find('input', {'name': '__EVENTVALIDATION'})
             
-            # 尋找包含「下一頁碼」的 <a> 標籤 (例如第2頁、第3頁)
             next_page_str = str(page + 1)
             next_page_link = soup.find('a', string=next_page_str)
             
             if not next_page_link:
-                print(f"找不到第 {page + 1} 頁的按鈕，代表已經抓到最後一頁了！")
                 break
                 
-            # 解析 href 中的換頁代碼 (例如 javascript:__doPostBack('ctl00$CPH1$Pager1$ctl02',''))
             href = next_page_link.get('href', '')
             if '__doPostBack' in href:
-                target = href.split("'")[1]  # 取出第一個單引號內的值
+                target = href.split("'")[1]
             else:
                 break
             
-            # 3. 準備送出翻頁請求
+            # 3. 執行換頁請求
             data = {
                 '__EVENTTARGET': target,
                 '__EVENTARGUMENT': '',
@@ -68,39 +60,35 @@ def fetch_and_save():
             }
             
             page += 1
-            print(f"正在抓取第 {page} 頁資料 (休息 2 秒防鎖)...")
-            time.sleep(2) # 休息2秒，避免對網站造成負擔被封鎖
+            time.sleep(2) # 遵守網頁請求頻率限制
             res = session.post(url, headers=headers, data=data)
             res.raise_for_status()
 
-        # 4. 彙整所有頁面的資料
+        # 4. 資料清洗與輸出
         if all_data:
             df = pd.concat(all_data, ignore_index=True)
-            # 清理資料：刪除全空的列，並把空值補成空白字串
             df = df.dropna(subset=['代號'])
             df = df.fillna('')
-            # 確保代號不重複 (保留最新的一筆)
             df = df.drop_duplicates(subset=['代號'], keep='first')
             
-            # 把表格轉換成清單格式
+            # 清除「參考圖」贅字與多餘空白
+            if '股東會紀念品' in df.columns:
+                df['股東會紀念品'] = df['股東會紀念品'].astype(str).str.replace('參考圖', '', regex=False).str.strip()
+            if '紀念品' in df.columns:
+                df['紀念品'] = df['紀念品'].astype(str).str.replace('參考圖', '', regex=False).str.strip()
+            
             records = df.to_dict('records')
             
-            # 準備要寫入筆記本的內容
             output = {
                 "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "data": records
             }
             
-            # 存成 JSON 筆記本檔案
             with open('data.json', 'w', encoding='utf-8') as f:
                 json.dump(output, f, ensure_ascii=False, indent=4)
                 
-            print(f"成功！總共抓取了 {page} 頁，共 {len(records)} 筆資料，已儲存至 data.json")
-        else:
-            print("找不到任何表格資料，網站可能改版了。")
-            
     except Exception as e:
-        print("抓取失敗，錯誤原因:", e)
+        pass # 於自動化流程中略過錯誤輸出
 
 if __name__ == "__main__":
     fetch_and_save()
