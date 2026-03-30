@@ -2,30 +2,25 @@ name: 每日更新股東會紀念品資料
 
 on:
   schedule:
-    - cron: '0 23 * * *'   # 台灣時間每天早上7點（UTC+8 = UTC 23點）
-  workflow_dispatch:         # 也可以手動觸發
+    - cron: '0 23 * * *'
+  workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - name: 取得程式碼
         uses: actions/checkout@v4
-
       - name: 安裝 Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: 安裝套件
         run: pip install requests beautifulsoup4
-
       - name: 執行爬蟲
         run: python scraper.py
-
       - name: 儲存結果
         run: |
           git config user.name "github-actions"
@@ -33,30 +28,3 @@ jobs:
           git add data.json
           git diff --staged --quiet || git commit -m "自動更新：$(date '+%Y-%m-%d')"
           git push
-```
-
-4. 右上角點 **「Commit changes」**
-
----
-
-## 步驟五：手動跑一次，確認有沒有問題
-
-1. 點 **「Actions」** 分頁
-2. 左側點剛建立的 workflow 名稱
-3. 右側點 **「Run workflow」→「Run workflow」**（綠色按鈕）
-4. 等約 1 分鐘，看到綠色勾勾代表成功
-
-回到 repo 首頁，應該會看到多了一個 **`data.json`** 檔案，點進去確認有資料。
-
----
-
-## 步驟六：取得 data.json 的公開網址
-
-這個網址格式固定，把以下兩個地方換成你的：
-```
-https://raw.githubusercontent.com/【你的帳號名稱】/shareholder-gift-data/main/data.json
-```
-
-例如帳號名稱是 `businessweekly`，網址就是：
-```
-https://raw.githubusercontent.com/businessweekly/shareholder-gift-data/main/data.json
